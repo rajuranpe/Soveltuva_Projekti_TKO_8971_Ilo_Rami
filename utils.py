@@ -38,6 +38,59 @@ Raises:
         print("No saved models yet! Please create a new network.")
         sys.exit()
 
+        
+def confusion_matrix(correct_file, predicted_file, classes):
+
+    def _read_simple_tsv(input_file):
+        with open(input_file) as f:
+            lines = []
+            for line in f:
+                line = line.rstrip('\n')
+                lines.append(line.split('\t'))
+            return lines
+
+    matrix = np.zeros((classes, classes))
+
+    answers = _read_simple_tsv(correct_file)
+    predictions = _read_simple_tsv(predicted_file)
+
+    zeros = lambda n: [np.zeros(classes) for _ in range(n)]
+    precision, recall, f1, tot_amount, amount, true_positive, false_negative = zeros(7)
+
+    for i in range(0, len(predictions)):
+         try:
+            correct_label = answers[i][2]               # expects the correct label to be in the 3rd row
+            p_dictionary_string = predictions[i][3]     # -||- 4th
+            the_label = labels.index(correct_label)
+
+            tot_amount[labels.index(correct_label)] += 1
+
+            p_dictionary = ast.literal_eval(p_dictionary_string)
+            largest = max(p_dictionary.items(), key=operator.itemgetter(1))[0]
+
+            amount[labels.index(largest)] += 1
+
+            if largest == correct_label:                    # the most probable label is selected
+                true_positive[the_label] += 1
+
+            # write the largest value into the matrix in the line of the correct label
+            matrix[labels.index(correct_label)][labels.index(largest)] += 1
+
+         except IndexError:
+            break
+         except SyntaxError:
+            break
+
+    for i in range(0, len(labels)):
+        precision[i] = true_positive[i] / tot_amount[i] # done
+        recall[i] = true_positive[i] / amount[i]
+
+        f1[i] = 2 * ((precision[i] * recall[i]) / (precision[i] + recall[i]))
+
+        print(labels[i] + " precision: " + str(round(precision[i], 4)) + " recall: " + str(round(recall[i], 4)) + " f1: " + str(round(f1[i], 4)))
+
+    print("\n" + np.array_str(matrix, precision=1, suppress_small=True))
+        
 def categoryName(n):
 """
 Contains a list of all the 100 categories 
